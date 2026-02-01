@@ -1,1 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIG</title>
+<style>
+  :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.35}
+  body{margin:0;padding:24px;background:#0b0f14;color:#e7eef7}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{margin:0 0 14px;font-size:22px}
+  .card{background:#121a24;border:1px solid #213042;border-radius:14px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  label{font-size:12px;color:#a9b7c7;display:block;margin:0 0 6px}
+  input,textarea,button{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #2a3b52;background:#0f1520;color:#e7eef7;padding:10px 12px;font:inherit}
+  textarea{min-height:110px;resize:vertical}
+  button{cursor:pointer;background:#1b2a3d;border-color:#2f4764}
+  button:hover{background:#22344b}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tabs{display:flex;gap:10px;margin:14px 0 10px}
+  .tab{flex:1;padding:10px;border-radius:10px;border:1px solid #2a3b52;background:#0f1520;color:#e7eef7;cursor:pointer}
+  .tab.active{background:#1b2a3d;border-color:#2f4764}
+  .row{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:860px){.row2{grid-template-columns:1fr 1fr}}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .actions button{width:auto;padding:10px 14px}
+  .small{font-size:12px;color:#a9b7c7;margin-top:8px}
+  .ok{color:#73e6a5}
+  .warn{color:#ffcc66}
+  .err{color:#ff7b7b}
+  .hint{color:#a9b7c7;font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SIG</h1>
+
+  <div class="card">
+    <div class="row row2">
+      <div>
+        <label>Shared Key</label>
+        <input id="key" class="mono">
+        <div class="hint">Same key must be used to decrypt.</div>
+      </div>
+      <div>
+        <label>Version</label>
+        <div class="tabs" style="margin:0">
+          <button class="tab active" id="tabSIG1" type="button">SIG1</button>
+          <button class="tab" id="tabSIG2" type="button">SIG2</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIG1 -->
+    <div id="panelSIG1" style="margin-top:14px;">
+      <div class="tabs">
+        <button class="tab active" id="tabSIG1Dec" type="button">Decrypt</button>
+        <button class="tab" id="tabSIG1Enc" type="button">Encrypt</button>
+      </div>
+
+      <div id="sig1Dec">
+        <label>Payload</label>
+        <textarea id="sig1Payload" class="mono"></textarea>
+
+        <div class="actions">
+          <button id="sig1BtnDec" type="button">Decrypt</button>
+          <button id="sig1BtnClear" type="button">Clear</button>
+          <button id="sig1BtnCopyClean" type="button">Copy Clean</button>
+        </div>
+
+        <label style="margin-top:12px;">Raw Output</label>
+        <textarea id="sig1OutRaw" class="mono" readonly></textarea>
+
+        <label style="margin-top:12px;">Cleaned Output (X → space)</label>
+        <textarea id="sig1OutClean" readonly></textarea>
+
+        <div id="sig1Status" class="small"></div>
+      </div>
+
+      <div id="sig1Enc" style="display:none;">
+        <label>Plaintext (A–Z only; use X for spaces)</label>
+        <textarea id="sig1Plain" class="mono"></textarea>
+
+        <div class="actions">
+          <button id="sig1BtnEnc" type="button">Encrypt</button>
+          <button id="sig1BtnNonce" type="button">New Nonce</button>
+          <button id="sig1BtnCopyPayload" type="button">Copy Payload</button>
+        </div>
+
+        <div class="row row2" style="margin-top:12px;">
+          <div>
+            <label>Nonce</label>
+            <input id="sig1Nonce" class="mono" maxlength="6">
+          </div>
+          <div>
+            <label>Payload</label>
+            <input id="sig1PayloadOut" class="mono" readonly>
+          </div>
+        </div>
+
+        <label style="margin-top:12px;">Ciphertext</label>
+        <textarea id="sig1Cipher" class="mono" readonly></textarea>
+
+        <div id="sig1StatusEnc" class="small"></div>
+      </div>
+    </div>
+
+    <!-- SIG2 -->
+    <div id="panelSIG2" style="display:none;margin-top:14px;">
+      <div class="tabs">
+        <button class="tab active" id="tabSIG2Dec" type="button">Decrypt</button>
+        <button class="tab" id="tabSIG2Enc" type="button">Encrypt</button>
+      </div>
+
+      <div id="sig2Dec">
+        <label>Payload</label>
+        <textarea id="sig2Payload" class="mono"></textarea>
+
+        <div class="actions">
+          <button id="sig2BtnDec" type="button">Decrypt</button>
+          <button id="sig2BtnClear" type="button">Clear</button>
+          <button id="sig2BtnCopyPlain" type="button">Copy Output</button>
+        </div>
+
+        <label style="margin-top:12px;">Output</label>
+        <textarea id="sig2Out" readonly></textarea>
+
+        <div id="sig2Status" class="small"></div>
+
+        <div class="hint" style="margin-top:10px;">
+          SIG2 alphabet supports: letters, space, digits, and common punctuation (.,?!:;'-() / @#&).
+        </div>
+      </div>
+
+      <div id="sig2Enc" style="display:none;">
+        <label>Plaintext</label>
+        <textarea id="sig2Plain"></textarea>
+
+        <div class="actions">
+          <button id="sig2BtnEnc" type="button">Encrypt</button>
+          <button id="sig2BtnNonce" type="button">New Nonce</button>
+          <button id="sig2BtnCopyPayload" type="button">Copy Payload</button>
+        </div>
+
+        <div class="row row2" style="margin-top:12px;">
+          <div>
+            <label>Nonce</label>
+            <input id="sig2Nonce" class="mono" maxlength="6">
+          </div>
+          <div>
+            <label>Tag (auto)</label>
+            <input id="sig2Tag" class="mono" maxlength="6" readonly>
+          </div>
+        </div>
+
+        <label style="margin-top:12px;">Payload</label>
+        <input id="sig2PayloadOut" class="mono" readonly>
+
+        <label style="margin-top:12px;">Ciphertext</label>
+        <textarea id="sig2Cipher" class="mono" readonly></textarea>
+
+        <div id="sig2StatusEnc" class="small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= Shared Utilities ========= */
+const A_CODE = "A".charCodeAt(0);
+const el = (id) => document.getElementById(id);
+
+function nonce6(){
+  const b = new Uint8Array(6);
+  crypto.getRandomValues(b);
+  let s = "";
+  for(let i=0;i<6;i++) s += String.fromCharCode(A_CODE + (b[i] % 26));
+  return s;
+}
+
+async function sha256Bytes(str){
+  const data = new TextEncoder().encode(str);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(digest);
+}
+
+function bytesToHex(bytes){
+  let out = "";
+  for(const b of bytes) out += b.toString(16).padStart(2,"0");
+  return out;
+}
+
+/* ========= SIG1 (exact behavior) =========
+   Payload: SIG1.<NONCE6>.<CIPHERTEXT>
+   Alphabet: A-Z only; X used by convention for space
+*/
+function cleanAZ(s){ return (s||"").toUpperCase().replace(/[^A-Z]/g,""); }
+const mod26 = (n)=> (n%26+26)%26;
+const toIdx26 = (c)=> c.charCodeAt(0)-A_CODE;
+const toCh26 = (i)=> String.fromCharCode(A_CODE+i);
+
+async function* byteStream(seedStr){
+  let block = await sha256Bytes(seedStr);
+  while(true){
+    for(let i=0;i<block.length;i++) yield block[i];
+    block = await crypto.subtle.digest("SHA-256", block).then(b=>new Uint8Array(b));
+  }
+}
+
+async function buildSIG1(key, nonce){
+  if(!key || !key.trim()) throw new Error("Key required.");
+  const stream = byteStream(`SIG1|${key.trim()}|${nonce}`);
+  const nextByte = async()=> (await stream.next()).value;
+
+  async function randInt(n){
+    const lim = Math.floor(256/n)*n;
+    while(true){
+      const b = await nextByte();
+      if(b < lim) return b % n;
+    }
+  }
+
+  async function makeRotor(){
+    const arr = Array.from({length:26},(_,i)=>i);
+    for(let i=25;i>0;i--){
+      const j = await randInt(i+1);
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  const r0=await makeRotor(), r1=await makeRotor(), r2=await makeRotor();
+  const inv=(r)=>{ const ir=new Array(26); for(let i=0;i<26;i++) ir[r[i]]=i; return ir; };
+  const ir0=inv(r0), ir1=inv(r1), ir2=inv(r2);
+
+  // reflector involution with some self-maps
+  async function makeReflector(){
+    const ref = new Array(26).fill(-1);
+    const u = Array.from({length:26},(_,i)=>i);
+    while(u.length){
+      const a = u.splice(await randInt(u.length),1)[0];
+      if((await randInt(100))<20 || !u.length){ ref[a]=a; continue; }
+      const b = u.splice(await randInt(u.length),1)[0];
+      ref[a]=b; ref[b]=a;
+    }
+    return ref;
+  }
+
+  const ref = await makeReflector();
+  const o0=(await nextByte())%26, o1=(await nextByte())%26, o2=(await nextByte())%26;
+
+  return {r0,r1,r2,ir0,ir1,ir2,ref,o0,o1,o2};
+}
+
+function stepSIG1(s){
+  s.o2 = (s.o2+1)%26;
+  if(s.o2===0){
+    s.o1 = (s.o1+1)%26;
+    if(s.o1===0) s.o0 = (s.o0+1)%26;
+  }
+}
+
+function rotorFwd26(x, rotor, off){
+  const y = rotor[mod26(x+off)];
+  return mod26(y-off);
+}
+function rotorInv26(x, invRotor, off){
+  const y = invRotor[mod26(x+off)];
+  return mod26(y-off);
+}
+
+function xformSIG1(x, s){
+  x = rotorFwd26(x,s.r0,s.o0);
+  x = rotorFwd26(x,s.r1,s.o1);
+  x = rotorFwd26(x,s.r2,s.o2);
+  x = s.ref[x];
+  x = rotorInv26(x,s.ir2,s.o2);
+  x = rotorInv26(x,s.ir1,s.o1);
+  x = rotorInv26(x,s.ir0,s.o0);
+  return x;
+}
+
+async function sig1Crypt(key, nonce, text){
+  const s = await buildSIG1(key, nonce);
+  const input = cleanAZ(text);
+  let out = "";
+  for(const ch of input){
+    const idx = toIdx26(ch);
+    stepSIG1(s);
+    out += toCh26(xformSIG1(idx,s));
+  }
+  return out;
+}
+
+/* ========= SIG2 =========
+   Payload: SIG2.<NONCE6>.<TAG6>.<CIPHERTEXT>
+   Practical alphabet (N chars).
+   Improvements:
+     - Expanded alphabet (space, digits, punctuation)
+     - Irregular stepping (state-driven)
+     - Reflector rotation offset
+     - Integrity tag (wrong key / tampering detection)
+*/
+
+const SIG2_ALPHABET =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+  " " +
+  "0123456789" +
+  ".,?!:;'-()/" +
+  "@#&";
+
+const N2 = SIG2_ALPHABET.length;
+
+function makeIndexMap(alphabet){
+  const m = new Map();
+  for(let i=0;i<alphabet.length;i++) m.set(alphabet[i], i);
+  return m;
+}
+const SIG2_MAP = makeIndexMap(SIG2_ALPHABET);
+
+function cleanSIG2Text(s){
+  // normalize: uppercase letters; keep only chars in SIG2 alphabet
+  const t = (s||"").toUpperCase();
+  let out = "";
+  for(const ch of t){
+    if(SIG2_MAP.has(ch)) out += ch;
+  }
+  return out;
+}
+const modN = (n)=> (n%N2 + N2)%N2;
+
+async function buildSIG2(key, nonce){
+  if(!key || !key.trim()) throw new Error("Key required.");
+  const stream = byteStream(`SIG2|${key.trim()}|${nonce}|ALPHA:${SIG2_ALPHABET}`);
+  const nextByte = async()=> (await stream.next()).value;
+
+  async function randInt(n){
+    const lim = Math.floor(256/n)*n;
+    while(true){
+      const b = await nextByte();
+      if(b < lim) return b % n;
+    }
+  }
+
+  async function makePerm(){
+    const arr = Array.from({length:N2},(_,i)=>i);
+    for(let i=N2-1;i>0;i--){
+      const j = await randInt(i+1);
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  const r0=await makePerm(), r1=await makePerm(), r2=await makePerm();
+  const inv=(r)=>{ const ir=new Array(N2); for(let i=0;i<N2;i++) ir[r[i]]=i; return ir; };
+  const ir0=inv(r0), ir1=inv(r1), ir2=inv(r2);
+
+  async function makeReflector(){
+    const ref = new Array(N2).fill(-1);
+    const u = Array.from({length:N2},(_,i)=>i);
+    while(u.length){
+      const a = u.splice(await randInt(u.length),1)[0];
+      // ~15% fixed points, else pair
+      if((await randInt(100))<15 || !u.length){ ref[a]=a; continue; }
+      const b = u.splice(await randInt(u.length),1)[0];
+      ref[a]=b; ref[b]=a;
+    }
+    return ref;
+  }
+
+  const ref = await makeReflector();
+  const o0=(await nextByte())%N2, o1=(await nextByte())%N2, o2=(await nextByte())%N2;
+  const roff=(await nextByte())%N2; // reflector rotation offset
+
+  return {r0,r1,r2,ir0,ir1,ir2,ref,o0,o1,o2,roff};
+}
+
+// Irregular stepping: deterministic from state only (both sides match)
+function stepSIG2(s){
+  // Always step right + reflector offset
+  s.o2 = (s.o2 + 1) % N2;
+  s.roff = (s.roff + 1) % N2;
+
+  // Step middle when right hits certain residues (more movement than SIG1)
+  if(s.o2 === 0 || (s.o2 % 7) === 0){
+    s.o1 = (s.o1 + 1) % N2;
+  }
+
+  // Step left when middle hits certain residues
+  if(s.o1 === 0 || (s.o1 % 11) === 0){
+    s.o0 = (s.o0 + 1) % N2;
+  }
+}
+
+function rotorFwdN(x, rotor, off){
+  const y = rotor[modN(x + off)];
+  return modN(y - off);
+}
+function rotorInvN(x, invRotor, off){
+  const y = invRotor[modN(x + off)];
+  return modN(y - off);
+}
+function reflectN(x, ref, roff){
+  // rotate-reflector: apply offset around involution
+  return modN(ref[modN(x + roff)] - roff);
+}
+
+function xformSIG2(x, s){
+  x = rotorFwdN(x, s.r0, s.o0);
+  x = rotorFwdN(x, s.r1, s.o1);
+  x = rotorFwdN(x, s.r2, s.o2);
+
+  x = reflectN(x, s.ref, s.roff);
+
+  x = rotorInvN(x, s.ir2, s.o2);
+  x = rotorInvN(x, s.ir1, s.o1);
+  x = rotorInvN(x, s.ir0, s.o0);
+  return x;
+}
+
+async function sig2Crypt(key, nonce, text){
+  const s = await buildSIG2(key, nonce);
+  const input = cleanSIG2Text(text);
+  let out = "";
+  for(const ch of input){
+    stepSIG2(s);
+    const idx = SIG2_MAP.get(ch);
+    const y = xformSIG2(idx, s);
+    out += SIG2_ALPHABET[y];
+  }
+  return out;
+}
+
+async function sig2Tag6(key, nonce, normalizedPlain){
+  // tag based on normalized plaintext (after cleaning), to validate wrong key/tamper
+  const bytes = await sha256Bytes(`SIG2|TAG|${key.trim()}|${nonce}|${SIG2_ALPHABET}|${normalizedPlain}`);
+  // 6 hex chars (24 bits)
+  return bytesToHex(bytes).slice(0,6).toUpperCase();
+}
+
+/* ========= UI Wiring ========= */
+function setVersion(v){
+  el("tabSIG1").classList.toggle("active", v==="SIG1");
+  el("tabSIG2").classList.toggle("active", v==="SIG2");
+  el("panelSIG1").style.display = v==="SIG1" ? "" : "none";
+  el("panelSIG2").style.display = v==="SIG2" ? "" : "none";
+}
+el("tabSIG1").addEventListener("click", ()=>setVersion("SIG1"));
+el("tabSIG2").addEventListener("click", ()=>setVersion("SIG2"));
+
+function setSIG1Mode(m){
+  el("tabSIG1Dec").classList.toggle("active", m==="dec");
+  el("tabSIG1Enc").classList.toggle("active", m==="enc");
+  el("sig1Dec").style.display = m==="dec" ? "" : "none";
+  el("sig1Enc").style.display = m==="enc" ? "" : "none";
+}
+el("tabSIG1Dec").addEventListener("click", ()=>setSIG1Mode("dec"));
+el("tabSIG1Enc").addEventListener("click", ()=>setSIG1Mode("enc"));
+
+function setSIG2Mode(m){
+  el("tabSIG2Dec").classList.toggle("active", m==="dec");
+  el("tabSIG2Enc").classList.toggle("active", m==="enc");
+  el("sig2Dec").style.display = m==="dec" ? "" : "none";
+  el("sig2Enc").style.display = m==="enc" ? "" : "none";
+}
+el("tabSIG2Dec").addEventListener("click", ()=>setSIG2Mode("dec"));
+el("tabSIG2Enc").addEventListener("click", ()=>setSIG2Mode("enc"));
+
+function copyText(value){
+  if(!value) return;
+  navigator.clipboard.writeText(value).catch(()=>{});
+}
+
+/* ---- SIG1 actions ---- */
+el("sig1BtnNonce").addEventListener("click", ()=>{ el("sig1Nonce").value = nonce6(); });
+
+el("sig1BtnEnc").addEventListener("click", async()=>{
+  try{
+    el("sig1StatusEnc").textContent = "";
+    const key = el("key").value || "";
+    let nonce = cleanAZ(el("sig1Nonce").value || "");
+    if(nonce.length !== 6){ nonce = nonce6(); el("sig1Nonce").value = nonce; }
+    const pt = el("sig1Plain").value || "";
+    const ct = await sig1Crypt(key, nonce, pt);
+    el("sig1Cipher").value = ct;
+    el("sig1PayloadOut").value = `SIG1.${nonce}.${ct}`;
+    el("sig1StatusEnc").innerHTML = `<span class="ok">Encrypted</span> • Len: ${ct.length}`;
+  }catch(e){
+    el("sig1StatusEnc").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+});
+
+el("sig1BtnCopyPayload").addEventListener("click", ()=>copyText(el("sig1PayloadOut").value));
+el("sig1BtnCopyClean").addEventListener("click", ()=>copyText(el("sig1OutClean").value));
+
+el("sig1BtnDec").addEventListener("click", async()=>{
+  try{
+    el("sig1Status").textContent = "";
+    const key = el("key").value || "";
+    const raw = (el("sig1Payload").value || "").trim().toUpperCase().replace(/\s+/g,"");
+    const parts = raw.split(".");
+    if(parts.length !== 3 || parts[0] !== "SIG1") throw new Error("Expected: SIG1.<NONCE6>.<CIPHERTEXT>");
+    const nonce = cleanAZ(parts[1]);
+    const ct = cleanAZ(parts[2]);
+    if(nonce.length !== 6) throw new Error("SIG1 nonce must be 6 letters.");
+    const pt = await sig1Crypt(key, nonce, ct);
+    el("sig1OutRaw").value = pt;
+    el("sig1OutClean").value = pt.replace(/X/g," ");
+    el("sig1Status").innerHTML = `<span class="ok">Decrypted</span> • Len: ${pt.length}`;
+  }catch(e){
+    el("sig1Status").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+});
+
+el("sig1BtnClear").addEventListener("click", ()=>{
+  el("sig1Payload").value = "";
+  el("sig1OutRaw").value = "";
+  el("sig1OutClean").value = "";
+  el("sig1Status").textContent = "";
+});
+
+/* ---- SIG2 actions ---- */
+el("sig2BtnNonce").addEventListener("click", ()=>{ el("sig2Nonce").value = nonce6(); });
+
+el("sig2BtnEnc").addEventListener("click", async()=>{
+  try{
+    el("sig2StatusEnc").textContent = "";
+    const key = el("key").value || "";
+    let nonce = cleanAZ(el("sig2Nonce").value || "");
+    if(nonce.length !== 6){ nonce = nonce6(); el("sig2Nonce").value = nonce; }
+
+    const plainRaw = el("sig2Plain").value || "";
+    const plainNorm = cleanSIG2Text(plainRaw);
+    if(!plainNorm) throw new Error("Plaintext is empty after cleaning.");
+
+    const ct = await sig2Crypt(key, nonce, plainNorm);
+    const tag = await sig2Tag6(key, nonce, plainNorm);
+
+    el("sig2Cipher").value = ct;
+    el("sig2Tag").value = tag;
+    el("sig2PayloadOut").value = `SIG2.${nonce}.${tag}.${ct}`;
+    el("sig2StatusEnc").innerHTML = `<span class="ok">Encrypted</span> • Len: ${ct.length}`;
+  }catch(e){
+    el("sig2StatusEnc").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+});
+
+el("sig2BtnCopyPayload").addEventListener("click", ()=>copyText(el("sig2PayloadOut").value));
+el("sig2BtnCopyPlain").addEventListener("click", ()=>copyText(el("sig2Out").value));
+
+el("sig2BtnDec").addEventListener("click", async()=>{
+  try{
+    el("sig2Status").textContent = "";
+    const key = el("key").value || "";
+    const raw = (el("sig2Payload").value || "").trim().toUpperCase().replace(/\s+/g,"");
+    const parts = raw.split(".");
+    if(parts.length !== 4 || parts[0] !== "SIG2") throw new Error("Expected: SIG2.<NONCE6>.<TAG6>.<CIPHERTEXT>");
+    const nonce = cleanAZ(parts[1]);
+    const tag = (parts[2] || "").toUpperCase();
+    const ctRaw = parts[3] || "";
+    if(nonce.length !== 6) throw new Error("SIG2 nonce must be 6 letters.");
+    if(!/^[0-9A-F]{6}$/.test(tag)) throw new Error("SIG2 tag must be 6 hex chars (0-9,A-F).");
+
+    // decrypt
+    const pt = await sig2Crypt(key, nonce, ctRaw);
+
+    // validate tag against normalized plaintext
+    const ptNorm = cleanSIG2Text(pt);
+    const check = await sig2Tag6(key, nonce, ptNorm);
+
+    el("sig2Out").value = pt;
+
+    if(check === tag){
+      el("sig2Status").innerHTML = `<span class="ok">Decrypted • Tag OK</span> • Len: ${pt.length}`;
+    }else{
+      el("sig2Status").innerHTML =
+        `<span class="warn">Decrypted but TAG FAILED</span> — wrong key or modified message. ` +
+        `Expected <span class="mono">${check}</span>, got <span class="mono">${tag}</span>.`;
+    }
+  }catch(e){
+    el("sig2Status").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+});
+
+el("sig2BtnClear").addEventListener("click", ()=>{
+  el("sig2Payload").value = "";
+  el("sig2Out").value = "";
+  el("sig2Status").textContent = "";
+});
+
+/* Defaults */
+el("sig1Nonce").value = nonce6();
+el("sig2Nonce").value = nonce6();
+setVersion("SIG1");
+setSIG1Mode("dec");
+setSIG2Mode("dec");
+</script>
+</body>
+</html>
 
